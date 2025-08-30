@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/api/handler"
@@ -16,10 +17,18 @@ import (
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/ingestion"
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/repository"
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/service"
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/pkg/server"
+)
+
+var (
+	VERSION = "0.1.0-dev"
+	COMMIT  = "ABCDEFG-dev"
 )
 
 func main() {
-	// Carregar configurações
+	log.Println("Starting B3 Trade Aggregator application")
+
+	// Carrega configurações
 	cfg := config.LoadConfig()
 
 	// Inicializar pool de conexões com o banco de dados usando pgx
@@ -35,7 +44,7 @@ func main() {
 	}
 	log.Println("Pool de conexões PostgreSQL estabelecido com sucesso!")
 
-	// 1. Configurar dependências para Ingestão
+	// Configurar dependências para Ingestão
 	tradeReader := ingestion.NewTradeStreamReader()
 	tradeRepo := repository.NewPostgresTradeRepository(pool)
 	tradeService := service.NewTradeService(tradeReader, tradeRepo)
@@ -55,17 +64,47 @@ func main() {
 		}
 	}()
 
-	// 2. Configurar o router Chi
+	// Criação do router com Chi
 	r := chi.NewRouter()
+
+	// Middleware básico
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second)) // Timeout para requisições HTTP
+	r.Use(middleware.Timeout(60 * time.Second))
 
-	apiHandler := handler.NewAPIHandler(tradeService)
+	// Configure CORS
+	corsMiddleware := cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	})
+	r.Use(corsMiddleware)
 
-	r.Get("/trades/aggregated", apiHandler.GetAggregatedTrades)
+	// Healthcheck básico
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"MSG":"Server Ok","codigo":200}`)
+	})
 
-	log.Printf("Servidor API REST rodando na porta %s", cfg.APIPort)
-	http.ListenAndServe(fmt.Sprintf(":%s", cfg.APIPort), r)
+	// Registra handlers do módulo trade
+	handler.RegisterTradeAPIHandlers(r, tradeService)
+
+	// Create an HTTP server
+	srv := server.NewHTTPServer(r, cfg)
+
+	// Start the server in goroutine
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
+
+	log.Printf("Server Run on [Port: %s], [Mode: %s], [Version: %s], [Commit: %s]", cfg.Port, cfg.Mode, VERSION, COMMIT)
+
+	select {}
 }
