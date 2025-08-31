@@ -11,11 +11,7 @@ func RegisterTradeAPIHandlers(r *chi.Mux, tradeService service.TradeService) {
 		// Trade routes
 		r.Route("/trades", func(r chi.Router) {
 			r.Get("/aggregated", GetAggregatedTradesHandler(tradeService))
-			// Add more trade endpoints here as needed
-			// r.Post("/", CreateTradeHandler(tradeService))
-			// r.Get("/{id}", GetTradeHandler(tradeService))
-			// r.Put("/{id}", UpdateTradeHandler(tradeService))
-			// r.Delete("/{id}", DeleteTradeHandler(tradeService))
+			
 		})
 	})
 }

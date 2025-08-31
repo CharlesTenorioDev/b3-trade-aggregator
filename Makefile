@@ -1,74 +1,137 @@
-.PHONY: build run test clean docker-build docker-run deps migrate
+# Variável auxiliar para carregar as variáveis de ambiente do arquivo .env.
+# Isso garante que todas as variáveis definidas no  arquivo .env
+# (como DATABASE_URL, SRV_PORT, FILE_PATH, etc.)
+# estejam disponíveis para os comandos Go subsequentes.
+# 'set -a' ativa o modo de exportação automática.
+# '. ./.env' (ou 'source ./.env') lê e executa o arquivo .env no shell atual.
+# 'set +a' desativa o modo de exportação automática.
+# '|| true' garante que o Makefile não falhe se o arquivo .env não existir (útil em alguns cenários).
+_LOAD_ENV := set -a && . ./.env && set +a || true
 
-# Build the application
+.PHONY: build run test clean docker-build docker-run deps migrate build-cli run-cli run-cli-env \
+        test-coverage docker-stop docker-logs setup setup-full dev db-reset perf-test \
+        cli-help cli-version cli-example cli-example-env
+
+# Build da aplicação principal (servidor API)
 build:
-	go build -o bin/app cmd/app/main.go
+    go build -o bin/app cmd/app/main.go
 
-# Run the application
-run:
-	go run cmd/app/main.go
+# Build da ferramenta CLI de ingestão
+build-cli:
+    go build -o bin/ingest cmd/ingest/main.go
 
-# Run tests
+# Executa a aplicação principal (servidor API).
+# Primeiro, garante que o binário 'app' está construído,
+# depois carrega as variáveis de ambiente e executa o binário.
+run: build
+    $(info Rodando a aplicação principal...)
+    $(info Carregando variáveis de ambiente do .env...)
+    $(_LOAD_ENV) && ./bin/app
+
+# Executa a ferramenta CLI de ingestão.
+# Primeiro, garante que o binário 'ingest' está construído,
+# depois carrega as variáveis de ambiente e executa o binário.
+run-cli: build-cli
+    $(info Rodando a ferramenta CLI de ingestão...)
+    $(info Carregando variáveis de ambiente do .env (incluindo FILE_PATH)...)
+    $(_LOAD_ENV) && ./bin/ingest
+
+# Executa a ferramenta CLI de ingestão, definindo o FILE_PATH explicitamente
+# via variável de ambiente no comando, além de carregar outras do .env.
+run-cli-env: build-cli
+    $(info Rodando a ferramenta CLI de ingestão com FILE_PATH explícito...)
+    $(info Carregando outras variáveis de ambiente do .env...)
+    $(_LOAD_ENV) && FILE_PATH=data/29-08-2025_NEGOCIOSAVISTA.txt ./bin/ingest
+
+# Executa todos os testes unitários do projeto
 test:
-	go test ./...
+    go test ./...
 
-# Run tests with coverage
+# Executa testes com cobertura de código e gera um relatório HTML
 test-coverage:
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out
+    go test -coverprofile=coverage.out ./...
+    go tool cover -html=coverage.out
 
-# Clean build artifacts
+# Limpa os artefatos de build (binários e arquivos de cobertura)
 clean:
-	rm -rf bin/
-	rm -f coverage.out
+    rm -rf bin/
+    rm -f coverage.out
 
-# Build Docker image
+# Constrói a imagem Docker da aplicação com a tag 'b3-trade-aggregator'
 docker-build:
-	docker build -t b3-trade-aggregator .
+    docker build -t b3-trade-aggregator .
 
-# Run with Docker Compose
+# Inicia os serviços definidos no docker-compose.yml em modo detached (-d).
+# O docker-compose por padrão já procura e carrega o arquivo .env na mesma pasta.
 docker-run:
-	docker-compose up -d
+    docker-compose up -d
 
-# Stop Docker Compose
+# Para e remove os containers e redes criados pelo docker-compose
 docker-stop:
-	docker-compose down
+    docker-compose down
 
-# Run Docker Compose with logs
+# Exibe os logs dos serviços do Docker Compose em tempo real
 docker-logs:
-	docker-compose logs -f
+    docker-compose logs -f
 
-# Run migrations
+# Executa as migrações do banco de dados.
+# ATENÇÃO: Você precisa substituir os comentários pelo comando real da sua ferramenta de migração.
+# Certifique-se de que sua ferramenta de migração (ex: 'migrate') esteja instalada
+# e que ela consiga ler a DATABASE_URL do ambiente.
 migrate:
-	# Add migration commands here
-	# Example: migrate -path migrations -database "postgres://user:pass@localhost:5432/dbname?sslmode=disable" up
+    $(info Executando migrações do banco de dados...)
+    $(info Certifique-se de que a ferramenta de migração (ex: 'migrate') está instalada.)
+    $(info Variáveis de ambiente do DB serão carregadas do .env.)
+    # Exemplo: $(_LOAD_ENV) migrate -path migrations -database "$(DATABASE_URL)" up
+    # Ou se usar uma ferramenta Go customizada para migrações:
+    # $(_LOAD_ENV) go run cmd/migrate/main.go up
 
-# Install dependencies
+# Instala as dependências do módulo Go e sincroniza o go.mod/go.sum
 deps:
-	go mod download
-	go mod tidy
+    go mod download
+    go mod tidy
 
-# Create data directory
+# Cria os diretórios necessários para o projeto
 setup:
-	mkdir -p data
-	mkdir -p bin
+    mkdir -p data
+    mkdir -p bin
 
-# Full setup: dependencies, build, and run
-setup-full: setup deps build
+# Configuração completa: instala dependências, cria diretórios e compila ambos os binários
+setup-full: setup deps build build-cli
 
-# Development with hot reload (requires air or similar tool)
+# Modo de desenvolvimento com hot reload (requer 'air' ou ferramenta similar).
+# Instalar 'air' se não presente: go install github.com/cosmtrek/air@latest
 dev:
-	# Install air if not present: go install github.com/cosmtrek/air@latest
-	air
+    $(info Iniciando modo de desenvolvimento com hot reload (usando 'air')...)
+    $(info Certifique-se de que 'air' está instalado.)
+    $(info Variáveis de ambiente do .env serão carregadas para 'air'.)
+    $(if $(shell which air), $(_LOAD_ENV) && air, $(error "air não encontrado. Por favor, instale-o com 'go install github.com/cosmtrek/air@latest'"))
 
-# Database operations
-db-reset:
-	docker-compose down -v
-	docker-compose up -d postgres
-	sleep 5
-	# Add migration commands here
+# Operações de banco de dados: para, remove volumes, inicia apenas o postgres e executa migrações
+db-reset: docker-stop
+    $(info Reiniciando o container do PostgreSQL e aplicando migrações...)
+    docker-compose up -d postgres
+    sleep 5 # Pequena pausa para garantir que o banco de dados esteja totalmente iniciado
+    $(MAKE) migrate # Executa as migrações após o reset do DB
 
-# Performance test
+# Adicione comandos para testes de performance aqui.
 perf-test:
-	# Add performance testing commands here
-	# Example: ab -n 1000 -c 10 http://localhost:8080/trades/aggregated?ticker=PETR4
+    $(info Adicione comandos de teste de performance aqui.)
+    # Exemplo: ab -n 1000 -c 10 http://localhost:8080/trades/aggregated?ticker=PETR4
+
+# Exemplos de uso da ferramenta CLI
+cli-help: build-cli
+    $(info Exibindo ajuda da CLI...)
+    $(_LOAD_ENV) && ./bin/ingest -help
+
+cli-version: build-cli
+    $(info Exibindo versão da CLI...)
+    $(_LOAD_ENV) && ./bin/ingest -version
+
+cli-example: build-cli
+    $(info Exemplo de uso da CLI com argumento de linha de comando (-file)...)
+    $(_LOAD_ENV) && ./bin/ingest -file data/29-08-2025_NEGOCIOSAVISTA.txt
+
+cli-example-env: build-cli
+    $(info Exemplo de uso da CLI com FILE_PATH vindo do .env...)
+    $(_LOAD_ENV) && ./bin/ingest

@@ -14,7 +14,6 @@ import (
 
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/api/handler"
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config"
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/ingestion"
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/repository"
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/service"
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/pkg/server"
@@ -26,7 +25,7 @@ var (
 )
 
 func main() {
-	log.Println("Starting B3 Trade Aggregator application")
+	log.Println("Starting B3 Trade Aggregator Web Application")
 
 	// Carrega configurações
 	cfg := config.LoadConfig()
@@ -44,25 +43,9 @@ func main() {
 	}
 	log.Println("Pool de conexões PostgreSQL estabelecido com sucesso!")
 
-	// Configurar dependências para Ingestão
-	tradeReader := ingestion.NewTradeStreamReader()
+	// Configurar dependências para consultas (sem ingestão)
 	tradeRepo := repository.NewPostgresTradeRepository(pool)
-	tradeService := service.NewTradeService(tradeReader, tradeRepo)
-
-	// Exemplo de como você chamaria a ingestão.
-	// Em um ambiente real, isso poderia ser um comando CLI separado ou um cron job.
-	go func() {
-		ingestionCtx, cancel := context.WithTimeout(context.Background(), 14*time.Minute) // Timeout de 14 minutos
-		defer cancel()
-		log.Println("Iniciando processo de ingestão...")
-		// O caminho do arquivo deve vir de uma configuração ou argumento CLI
-		filePath := "/path/to/your/29-08-2025_NEGOCIOSAVISTA.txt" // <-- AJUSTE ESTE CAMINHO
-		if err := tradeService.ProcessIngestion(ingestionCtx, filePath); err != nil {
-			log.Printf("Erro durante a ingestão: %v", err)
-		} else {
-			log.Println("Ingestão concluída com sucesso!")
-		}
-	}()
+	tradeService := service.NewTradeService(nil, tradeRepo) // No reader needed for queries only
 
 	// Criação do router com Chi
 	r := chi.NewRouter()

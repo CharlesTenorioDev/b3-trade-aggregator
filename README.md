@@ -10,17 +10,21 @@ A high-performance Go application for aggregating and processing B3 trade data w
 - **Docker Support**: Complete containerization with Docker Compose
 - **RESTful API**: HTTP API for querying aggregated trade data
 - **Stream Processing**: Efficient streaming file processing for large datasets
+- **Separated Concerns**: Independent CLI tool for data ingestion and web API for queries
 
 ## Project Structure
 
 ```
 ├── cmd/
-│   └── app/
-│       └── main.go                 # Application entry point
+│   ├── app/
+│   │   └── main.go                 # Web application entry point
+│   └── ingest/
+│       └── main.go                 # CLI ingestion tool entry point
 ├── internal/
 │   ├── api/
 │   │   └── handler/
-│   │       └── handler.go          # HTTP request handling logic
+│   │       ├── handler.go          # HTTP request handling logic
+│   │       └── router.go           # API route registration
 │   ├── config/
 │   │   └── config.go               # Configuration loading and structure
 │   ├── entity/
@@ -35,6 +39,8 @@ A high-performance Go application for aggregating and processing B3 trade data w
 │   └── util/
 │       └── errors.go               # Custom error types and utilities
 ├── pkg/                            # Reusable packages
+│   └── server/
+│       └── server.go               # HTTP server implementation
 ├── migrations/                     # Database migration scripts
 ├── tests/                          # Integration/end-to-end tests
 ├── data/                           # Data files directory
@@ -89,16 +95,44 @@ A high-performance Go application for aggregating and processing B3 trade data w
    docker-compose up -d postgres
    ```
 
-3. Run the application:
+3. Run the web application:
    ```bash
    make run
    ```
+
+### Data Ingestion (CLI Tool)
+
+The CLI tool is designed for processing large B3 trade files independently from the web application.
+
+#### Build the CLI:
+```bash
+make build-cli
+```
+
+#### Run the CLI:
+```bash
+# Show help
+make cli-help
+
+# Show version
+make cli-version
+
+# Process a file (replace with actual path)
+go run cmd/ingest/main.go -file /path/to/your/29-08-2025_NEGOCIOSAVISTA.txt
+```
+
+#### CLI Features:
+- **File Validation**: Checks if the specified file exists
+- **Progress Logging**: Real-time progress updates during processing
+- **Error Handling**: Comprehensive error reporting
+- **Performance Metrics**: Processing time and statistics
+- **Database Connection**: Automatic PostgreSQL connection management
 
 ### API Usage
 
 Query aggregated trade data:
 ```bash
-curl "http://localhost:8080/trades/aggregated?ticker=PETR4&data_inicio=2024-01-01"
+curl "http://localhost:8080/api/v1/trades/aggregated?ticker=PETR4&data_inicio=2024-01-01"
 ```
 
 Response format:
@@ -126,24 +160,46 @@ make test-coverage
 
 ### Available Make Commands
 
-- `make build` - Build the application
-- `make run` - Run the application
-- `make test` - Run tests
-- `make test-coverage` - Run tests with coverage
-- `make clean` - Clean build artifacts
+#### Web Application:
+- `make build` - Build the web application
+- `make run` - Run the web application
 - `make docker-build` - Build Docker image
 - `make docker-run` - Run with Docker Compose
 - `make docker-stop` - Stop Docker Compose
 - `make docker-logs` - View Docker logs
+
+#### CLI Tool:
+- `make build-cli` - Build the CLI tool
+- `make run-cli` - Run the CLI tool
+- `make cli-help` - Show CLI help
+- `make cli-version` - Show CLI version
+- `make cli-example` - Example CLI usage
+
+#### General:
+- `make test` - Run tests
+- `make test-coverage` - Run tests with coverage
+- `make clean` - Clean build artifacts
 - `make deps` - Install dependencies
 - `make setup` - Create necessary directories
-- `make setup-full` - Full setup (deps + build)
+- `make setup-full` - Full setup (deps + build both tools)
 - `make db-reset` - Reset database
 - `make perf-test` - Performance testing
 
-### Data Ingestion
+### Architecture Benefits
 
-The application is optimized for processing large B3 trade files (565MB+). The ingestion process:
+#### Separated Concerns:
+1. **Web Application**: Optimized for API queries and real-time responses
+2. **CLI Tool**: Dedicated to data ingestion and batch processing
+3. **Shared Services**: Common business logic and database operations
+
+#### Independent Operation:
+- **Web App**: Can run without ingestion overhead
+- **CLI Tool**: Can process files without web server resources
+- **Scalability**: Each component can be scaled independently
+
+### Data Ingestion Process
+
+The CLI tool processes large B3 trade files (565MB+) efficiently:
 
 1. **Streams** the file line by line without loading it entirely into memory
 2. **Parses** each line into structured trade data

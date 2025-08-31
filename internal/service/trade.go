@@ -11,9 +11,15 @@ import (
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/repository"
 )
 
+// ProgressTracker interface for tracking processing progress
+type ProgressTracker interface {
+	Increment()
+}
+
 // TradeService define a interface para as operações de negócio de negociações.
 type TradeService interface {
 	ProcessIngestion(ctx context.Context, filePath string) error
+	ProcessIngestionWithProgress(ctx context.Context, filePath string, progressTracker ProgressTracker) error
 	RetrieveAggregatedData(ctx context.Context, instrumentCode string, startDateStr string) (*entity.AggregatedData, error)
 }
 
@@ -33,6 +39,16 @@ func NewTradeService(reader ingestion.TradeReader, repo repository.TradeReposito
 
 // ProcessIngestion orquestra o pipeline de leitura, parsing e persistência.
 func (s *tradeServiceImpl) ProcessIngestion(ctx context.Context, filePath string) error {
+	return s.ProcessIngestionWithProgress(ctx, filePath, nil)
+}
+
+// ProcessIngestionWithProgress orquestra o pipeline de leitura, parsing e persistência com tracking de progresso.
+func (s *tradeServiceImpl) ProcessIngestionWithProgress(ctx context.Context, filePath string, progressTracker ProgressTracker) error {
+	// Check if reader is available (for web app that doesn't need ingestion)
+	if s.tradeReader == nil {
+		return fmt.Errorf("service: trade reader not available - ingestion not supported in this context")
+	}
+
 	const (
 		numWorkers = 4    // Número de goroutines para processar e salvar (ajustável)
 		batchSize  = 1000 // Tamanho do lote para inserção no banco de dados
@@ -51,6 +67,12 @@ func (s *tradeServiceImpl) ProcessIngestion(ctx context.Context, filePath string
 			batch := make([]entity.Trade, 0, batchSize)
 			for trade := range tradeCh {
 				batch = append(batch, trade)
+
+				// Increment progress tracker if available
+				if progressTracker != nil {
+					progressTracker.Increment()
+				}
+
 				if len(batch) >= batchSize {
 					// Salvar lote no banco de dados
 					err := s.tradeRepo.SaveTrades(ctx, batch)

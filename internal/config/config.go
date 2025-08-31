@@ -16,7 +16,6 @@ type Config struct {
 	APPName     string `json:"app_name"`
 	ServerHost  string `json:"server_host"`
 	Port        string `json:"port"`
-	APIPort     string `json:"api_port"`
 	Mode        string `json:"mode"`
 	DatabaseURL string `json:"database_url"`
 	*PGSQLConfig
@@ -41,15 +40,11 @@ type PGSQLConfig struct {
 func LoadConfig() *Config {
 	cfg := NewConfig()
 
-	// Set API port from environment or use default
-	apiPort := os.Getenv("API_PORT")
-	if apiPort == "" {
-		apiPort = "8080"
-		log.Printf("API_PORT não definida, usando default: %s", apiPort)
+	SRV_PORT := os.Getenv("SRV_PORT")
+	if SRV_PORT != "" {
+		cfg.Port = SRV_PORT
 	}
-	cfg.APIPort = apiPort
 
-	// Set database URL from environment or construct from components
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		// Construct from individual components
@@ -79,7 +74,10 @@ func NewConfig() *Config {
 	if SRV_DB_SSL_MODE != "" {
 		conf.PGSQLConfig.SRV_DB_SSL_MODE = SRV_DB_SSL_MODE
 	}
-
+	FILE_PATH := os.Getenv("FILE_PATH")
+	if FILE_PATH != "" {
+		conf.FilePath = FILE_PATH
+	}
 	return conf
 }
 

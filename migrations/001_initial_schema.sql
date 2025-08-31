@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS trades (
     id BIGSERIAL PRIMARY KEY,                          -- ID único da negociação (chave primária)
     trade_date DATE NOT NULL,                          -- Data em que a negociação ocorreu
-    instrument_code VARCHAR(10) NOT NULL,              -- Código do instrumento (ticker), ex: PETR4
+    instrument_code VARCHAR(20) NOT NULL,              -- Código do instrumento (ticker), ex: PETR4
     negotiated_price NUMERIC(18, 4) NOT NULL,          -- Valor unitário do ativo com precisão financeira
     negotiated_quantity INTEGER NOT NULL,              -- Quantidade de ativos negociados
     closing_time VARCHAR(9) NOT NULL,                  -- Horário da negociação no formato HHMMSSmmm
