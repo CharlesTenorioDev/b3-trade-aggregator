@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag" // Para parsing de argumentos de linha de comando
 	"fmt"
-	"log"         // Para logs de sistema
 	"os"          // Para operações de sistema de arquivos e variáveis de ambiente
 	"runtime"     // Para controle do uso de CPU
 	"sync/atomic" // Para operações atômicas seguras em concorrência
@@ -12,10 +11,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool" // Driver de pool de conexões para PostgreSQL (pgx)
 
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config"     // Configurações da aplicação
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/ingestion"  // Lógica de ingestão de dados
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/repository" // Camada de acesso a dados
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/service"    // Camada de lógica de negócio
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config"        // Configurações da aplicação
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config/logger" // Logger customizado
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/ingestion"     // Lógica de ingestão de dados
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/repository"    // Camada de acesso a dados
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/service"       // Camada de lógica de negócio
+	"go.uber.org/zap"
 )
 
 // Variáveis de versão e commit, geralmente preenchidas no momento do build.
@@ -74,7 +75,7 @@ func main() {
 	// Define o número máximo de núcleos de CPU a serem usados.
 	// 6 núcleos é um bom ponto de partida para balancear CPU e I/O.
 	runtime.GOMAXPROCS(6)
-	log.Printf("🔧 Núcleos de CPU limitados a: %d", runtime.GOMAXPROCS(0))
+	logger.Info("🔧 Núcleos de CPU limitados", zap.Int("cores", runtime.GOMAXPROCS(0)))
 
 	// Define e parseia as flags de linha de comando.
 	var (
@@ -113,36 +114,42 @@ func main() {
 
 	// Valida se o arquivo especificado existe.
 	if _, err := os.Stat(actualFilePath); os.IsNotExist(err) {
-		log.Fatalf("Arquivo não encontrado: %s", actualFilePath)
+		logger.Error("Arquivo não encontrado", err, zap.String("file", actualFilePath))
+		os.Exit(1)
 	}
 
 	// Obtém o tamanho do arquivo para cálculo de progresso e estatísticas.
 	fileInfo, err := os.Stat(actualFilePath)
 	if err != nil {
-		log.Fatalf("Erro ao obter informações do arquivo: %v", err)
+		logger.Error("Erro ao obter informações do arquivo", err, zap.String("file", actualFilePath))
+		os.Exit(1)
 	}
 	fileSizeMB := float64(fileInfo.Size()) / (1024 * 1024) // Converte bytes para MB
 
-	log.Printf("Iniciando CLI B3 Trade Aggregator v%s", VERSION)
-	log.Printf("Processando arquivo: %s (%.1f MB)", actualFilePath, fileSizeMB)
+	logger.Info("Iniciando CLI B3 Trade Aggregator",
+		zap.String("version", VERSION),
+		zap.String("file", actualFilePath),
+		zap.Float64("size_mb", fileSizeMB))
 
 	// Carrega as configurações da aplicação (incluindo DATABASE_URL).
 	cfg := config.LoadConfig()
 
 	// Inicializa a conexão com o banco de dados PostgreSQL usando pgxpool.
-	log.Println("Conectando ao PostgreSQL...")
+	logger.Info("Conectando ao PostgreSQL...")
 	// context.Background() é usado para o contexto inicial da criação do pool.
 	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Falha ao criar o pool de conexões: %v", err)
+		logger.Error("Falha ao criar o pool de conexões", err, zap.String("database_url", cfg.DatabaseURL))
+		os.Exit(1)
 	}
 	defer pool.Close() // Garante que o pool de conexões será fechado ao final da main
 
 	// Testa a conexão com o banco de dados.
 	if err = pool.Ping(context.Background()); err != nil {
-		log.Fatalf("Falha ao pingar o banco de dados: %v", err)
+		logger.Error("Falha ao pingar o banco de dados", err)
+		os.Exit(1)
 	}
-	log.Println("✅ Conexão com PostgreSQL estabelecida com sucesso!")
+	logger.Info("✅ Conexão com PostgreSQL estabelecida com sucesso!")
 
 	// Inicializa o rastreador de progresso.
 	progressTracker := &ProgressTracker{
@@ -158,8 +165,8 @@ func main() {
 	tradeService := service.NewTradeService(tradeReader, tradeRepo)
 
 	// Inicia o processo de ingestão de dados.
-	log.Println("🚀 Iniciando o processo de ingestão de dados...")
-	fmt.Println("�� Monitoramento de progresso ativado...")
+	logger.Info("🚀 Iniciando o processo de ingestão de dados...")
+	fmt.Println("📊 Monitoramento de progresso ativado...")
 
 	// Cria um contexto com timeout para a operação de ingestão.
 	// Se a ingestão demorar mais de 14 minutos, o contexto será cancelado.
@@ -184,7 +191,8 @@ func main() {
 	// Assumindo que o tradeService agora tem um método ProcessIngestionWithProgress.
 	if err := tradeService.ProcessIngestionWithProgress(ingestionCtx, actualFilePath, progressTracker); err != nil {
 		fmt.Println() // Limpa a linha de progresso antes de logar o erro
-		log.Fatalf("❌ Falha na ingestão: %v", err)
+		logger.Error("❌ Falha na ingestão", err)
+		os.Exit(1)
 	}
 
 	// Limpa a linha de progresso e imprime as estatísticas finais.
@@ -205,6 +213,14 @@ func main() {
 	// Exibe o tempo total em minutos para melhor legibilidade.
 	totalMinutes := progressTracker.GetElapsed().Minutes()
 	fmt.Printf("   ⏰ Tempo Total: %.2f minutos\n", totalMinutes)
+
+	// Log final statistics
+	logger.Info("✅ Ingestão concluída com sucesso!",
+		zap.Int64("records_processed", progressTracker.GetCount()),
+		zap.Duration("total_time", progressTracker.GetElapsed()),
+		zap.Float64("rate_per_sec", progressTracker.GetRate()),
+		zap.Float64("processing_speed_mb_per_sec", processingSpeed),
+		zap.Float64("total_minutes", totalMinutes))
 
 	fmt.Println("✅ Ingestão concluída com sucesso!")
 	fmt.Println("🎉 Processamento de dados finalizado!")

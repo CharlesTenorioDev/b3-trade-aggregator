@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/entity" // Caminho do módulo ajustado
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config/logger"
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/entity"
+	"go.uber.org/zap"
 )
 
 // TradeReader define a interface para leitura de stream de negociações.
@@ -35,14 +37,14 @@ func (c *TradeStreamReader) Read(ctx context.Context, path string) <-chan entity
 
 		file, err := os.Open(path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "erro ao abrir arquivo: %v\n", err)
+			logger.Error("erro ao abrir arquivo", err, zap.String("path", path))
 			return
 		}
 		defer file.Close()
 
 		logFile, err := os.Create("errors.log") // Arquivo para log de erros de parsing
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "erro ao criar arquivo de log: %v\n", err)
+			logger.Error("erro ao criar arquivo de log", err)
 			return
 		}
 		defer logFile.Close()
@@ -52,13 +54,13 @@ func (c *TradeStreamReader) Read(ctx context.Context, path string) <-chan entity
 		// Pula o cabeçalho do arquivo, se houver
 		if scanner.Scan() {
 			// Pode-se logar ou ignorar a linha do cabeçalho
-			// fmt.Printf("Cabeçalho: %s\n", scanner.Text())
+			// logger.Info("Cabeçalho do arquivo", zap.String("header", scanner.Text()))
 		}
 
 		for scanner.Scan() {
 			select {
 			case <-ctx.Done(): // Verifica se o contexto foi cancelado
-				fmt.Println("pipeline cancelado pelo contexto")
+				logger.Info("pipeline cancelado pelo contexto")
 				return
 			default:
 				line := scanner.Text()
@@ -73,7 +75,7 @@ func (c *TradeStreamReader) Read(ctx context.Context, path string) <-chan entity
 		}
 
 		if err := scanner.Err(); err != nil {
-			fmt.Fprintf(os.Stderr, "erro ao ler arquivo: %v\n", err)
+			logger.Error("erro ao ler arquivo", err, zap.String("path", path))
 		}
 	}()
 

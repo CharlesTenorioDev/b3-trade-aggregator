@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -14,9 +13,11 @@ import (
 
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/api/handler"
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config"
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config/logger"
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/repository"
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/service"
 	"github.com/CharlesTenorioDev/b3-trade-aggregator/pkg/server"
+	"go.uber.org/zap"
 )
 
 var (
@@ -25,7 +26,9 @@ var (
 )
 
 func main() {
-	log.Println("Starting B3 Trade Aggregator Web Application")
+	logger.Info("Starting B3 Trade Aggregator Web Application",
+		zap.String("version", VERSION),
+		zap.String("commit", COMMIT))
 
 	// Carrega configurações
 	cfg := config.LoadConfig()
@@ -33,15 +36,17 @@ func main() {
 	// Inicializar pool de conexões com o banco de dados usando pgx
 	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Falha ao criar pool de conexões: %v", err)
+		logger.Error("Falha ao criar pool de conexões", err, zap.String("database_url", cfg.DatabaseURL))
+		return
 	}
 	defer pool.Close()
 
 	// Testa a conexão
 	if err = pool.Ping(context.Background()); err != nil {
-		log.Fatalf("Falha ao pingar o banco de dados: %v", err)
+		logger.Error("Falha ao pingar o banco de dados", err)
+		return
 	}
-	log.Println("Pool de conexões PostgreSQL estabelecido com sucesso!")
+	logger.Info("Pool de conexões PostgreSQL estabelecido com sucesso!")
 
 	// Configurar dependências para consultas (sem ingestão)
 	tradeRepo := repository.NewPostgresTradeRepository(pool)
@@ -83,11 +88,16 @@ func main() {
 	// Start the server in goroutine
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed to start: %v", err)
+			logger.Error("Server failed to start", err)
+			return
 		}
 	}()
 
-	log.Printf("Server Run on [Port: %s], [Mode: %s], [Version: %s], [Commit: %s]", cfg.Port, cfg.Mode, VERSION, COMMIT)
+	logger.Info("Server started successfully",
+		zap.String("port", cfg.Port),
+		zap.String("mode", cfg.Mode),
+		zap.String("version", VERSION),
+		zap.String("commit", COMMIT))
 
 	select {}
 }

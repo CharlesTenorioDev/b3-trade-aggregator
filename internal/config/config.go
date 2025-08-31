@@ -2,8 +2,10 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
+
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config/logger"
+	"go.uber.org/zap"
 )
 
 const (
@@ -16,6 +18,7 @@ type Config struct {
 	APPName     string `json:"app_name"`
 	ServerHost  string `json:"server_host"`
 	Port        string `json:"port"`
+	APIPort     string `json:"api_port"`
 	Mode        string `json:"mode"`
 	DatabaseURL string `json:"database_url"`
 	*PGSQLConfig
@@ -40,17 +43,37 @@ type PGSQLConfig struct {
 func LoadConfig() *Config {
 	cfg := NewConfig()
 
-	SRV_PORT := os.Getenv("SRV_PORT")
-	if SRV_PORT != "" {
-		cfg.Port = SRV_PORT
+	// Set API port from environment or use default
+	apiPort := os.Getenv("API_PORT")
+	if apiPort == "" {
+		apiPort = "8080"
+		logger.Info("API_PORT não definida, usando default", zap.String("default_port", apiPort))
 	}
+	cfg.APIPort = apiPort
 
+	// Set database URL from environment or construct from components
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		// Construct from individual components
+		// Read individual database components from environment
+		dbHost := os.Getenv("SRV_DB_HOST")
+		dbPort := os.Getenv("SRV_DB_PORT")
+		dbUser := os.Getenv("SRV_DB_USER")
+		dbPass := os.Getenv("SRV_DB_PASS")
+		dbName := os.Getenv("SRV_DB_NAME")
+		dbSSLMode := os.Getenv("SRV_DB_SSL_MODE")
+
+		// Update the PGSQLConfig with the values from environment
+		cfg.DB_HOST = dbHost
+		cfg.DB_PORT = dbPort
+		cfg.DB_USER = dbUser
+		cfg.DB_PASS = dbPass
+		cfg.DB_NAME = dbName
+		cfg.SRV_DB_SSL_MODE = dbSSLMode
+
+		// Construct the DATABASE_URL
 		dbURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
-			cfg.DB_USER, cfg.DB_PASS, cfg.DB_HOST, cfg.DB_PORT, cfg.DB_NAME, cfg.SRV_DB_SSL_MODE)
-		log.Printf("DATABASE_URL não definida, usando construída: %s", dbURL)
+			dbUser, dbPass, dbHost, dbPort, dbName, dbSSLMode)
+		logger.Info("DATABASE_URL não definida, usando construída", zap.String("constructed_url", dbURL))
 	}
 	cfg.DatabaseURL = dbURL
 
@@ -74,10 +97,7 @@ func NewConfig() *Config {
 	if SRV_DB_SSL_MODE != "" {
 		conf.PGSQLConfig.SRV_DB_SSL_MODE = SRV_DB_SSL_MODE
 	}
-	FILE_PATH := os.Getenv("FILE_PATH")
-	if FILE_PATH != "" {
-		conf.FilePath = FILE_PATH
-	}
+
 	return conf
 }
 
