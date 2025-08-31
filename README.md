@@ -1,108 +1,115 @@
-# B3 Trade Aggregator
+# 🚀 Agregador de Negociações B3
 
-A high-performance Go application for aggregating and processing B3 trade data with PostgreSQL 17, optimized for large-scale data ingestion using pgx COPY FROM.
+Uma aplicação Go de alta performance para agregação e processamento de dados de negociações da B3 com 🐘 PostgreSQL 17, otimizada para ingestão de dados em larga escala usando pgx COPY FROM.
 
-## Features
+## ✒️ Autor
 
-- **High-Performance Data Ingestion**: Uses pgx COPY FROM for optimal bulk insert performance
-- **PostgreSQL 17**: Latest PostgreSQL version with advanced features
-- **Clean Architecture**: Well-structured Go project following best practices
-- **Docker Support**: Complete containerization with Docker Compose
-- **RESTful API**: HTTP API for querying aggregated trade data
-- **Stream Processing**: Efficient streaming file processing for large datasets
-- **Separated Concerns**: Independent CLI tool for data ingestion and web API for queries
+-   **Charles Tenorio da Silva**
+-   **Email**: charles.tenorio.dev@gmail.com
 
-## Project Structure
+## ✨ Funcionalidades
+
+-   **⚡ Ingestão de Dados de Alta Performance**: Utiliza `pgx COPY FROM` para uma performance ótima em inserções em massa.
+-   **�� PostgreSQL 17**: A versão mais recente do PostgreSQL com funcionalidades avançadas.
+-   **🧹 Arquitetura Limpa**: Projeto Go bem estruturado seguindo as melhores práticas.
+-   **🐳 Suporte a Docker**: Containerização completa com Docker Compose para fácil implantação.
+-   **🌐 API RESTful**: API HTTP para consultar dados de negociações agregados.
+-   **🌊 Processamento por Streaming**: Processamento eficiente de arquivos por streaming para grandes conjuntos de dados.
+-   **✂️ Separação de Responsabilidades**: Ferramenta CLI independente para ingestão de dados e API web para consultas.
+
+## 📁 Estrutura do Projeto
+
 
 ```
 ├── cmd/
 │   ├── app/
-│   │   └── main.go                 # Web application entry point
+│   │   └── main.go                 # Ponto de entrada da aplicação web
 │   └── ingest/
-│       └── main.go                 # CLI ingestion tool entry point
+│       └── main.go                 # Ponto de entrada da ferramenta CLI de ingestão 
 ├── internal/
 │   ├── api/
 │   │   └── handler/
-│   │       ├── handler.go          # HTTP request handling logic
+│   │       ├── handler.go          #  Lógica de tratamento de requisições HTTP
 │   │       └── router.go           # API route registration
 │   ├── config/
-│   │   └── config.go               # Configuration loading and structure
+│   │   └── config.go               # Carregamento e estrutura das configurações
 │   ├── entity/
-│   │   └── trade.go                # Data models
+│   │   └── trade.go                # Modelos de dados
 │   ├── ingestion/
-│   │   ├── reader.go               # Stream reading
-│   │   └── processor.go            # Orchestrates ingestion and persistence
+│   │   ├── reader.go               # Leitura por streaming
+
 │   ├── repository/
-│   │   └── trade.go                # Database interactions (pgx COPY FROM)
+│   │   └── trade.go                # Interações com o banco de dados (pgx COPY FROM)
 │   ├── service/
-│   │   └── trade.go                # Business logic and orchestration
+│   │   └── trade.go                #  Lógica de negócio e orquestração
 │   └── util/
-│       └── errors.go               # Custom error types and utilities
-├── pkg/                            # Reusable packages
+│       └── errors.go               # Tipos de erro customizados e utilitários
+├── pkg/                            # Pacotes reutilizáveis
 │   └── server/
-│       └── server.go               # HTTP server implementation
-├── migrations/                     # Database migration scripts
-├── tests/                          # Integration/end-to-end tests
-├── data/                           # Data files directory
-├── docker-compose.yml              # Docker service orchestration
-├── Dockerfile                      # Application containerization
-├── Makefile                        # Task automation
-└── go.mod                          # Go modules
+│       └── server.go               # Implementação do servidor HTTP
+├── migrations/                     #  Scripts de migração do banco de dados
+├── tests/                          # Testes de integração/ponta a ponta
+├── data/                           # Diretório para arquivos de dados
+├── docker-compose.yml              # Orquestração de serviços Docker
+├── Dockerfile                      # Containerização da aplicação
+├── Makefile                        # Automação de tarefas
+└── go.mod                          # Módulos Go
 ```
 
-## Performance Optimizations
+## 📈 Otimizações de Performance
 
-- **pgx COPY FROM**: Uses PostgreSQL's COPY protocol for bulk inserts (10x faster than individual INSERTs)
-- **Connection Pooling**: Efficient connection management with pgxpool
-- **Batch Processing**: Configurable batch sizes for optimal memory usage
-- **Streaming**: File processing without loading entire file into memory
-- **Indexed Queries**: Optimized database indexes for fast aggregations
+**pgx COPY FROM**: Utiliza o protocolo `COPY` do PostgreSQL para inserções em massa (10x mais rápido que `INSERT`s individuais).
+-   **Pool de Conexões**: Gerenciamento eficiente de conexões com `pgxpool`.
+-   **Processamento em Lotes**: Tamanhos de lote configuráveis para uso ótimo de memória.
+-   **Streaming**: Processamento de arquivos sem carregar o arquivo inteiro na memória.
+-   **Queries Indexadas**: Índices de banco de dados otimizados para agregações rápidas.
 
-## Getting Started
+## �� Primeiros Passos
 
-### Prerequisites
+### Pré-requisitos
 
-- Go 1.24+
-- PostgreSQL 17
-- Docker and Docker Compose
+-   Go 1.24+ 🐹
+-   PostgreSQL 17 ��
+-   Docker e Docker Compose 🐳
+-   **Arquivo de Dados da B3**: É imprescindível baixar o arquivo de dados da B3 do link [https://arquivos.b3.com.br/rapinegocios/tickercsv/2025-08-29](https://arquivos.b3.com.br/rapinegocios/tickercsv/2025-08-29) e salvá-lo na pasta `data/` com o nome `29-08-2025_NEGOCIOSAVISTA.txt`. O caminho final do arquivo deve ser `data/29-08-2025_NEGOCIOSAVISTA.txt`.
 
-### Running with Docker (Recommended)
+### Executando com Docker (Recomendado)
 
-1. Start the services:
-   ```bash
-   make docker-run
-   ```
+1.  Inicie os serviços:
+    ```bash
+    make docker-run
+    ```
 
-2. Check logs:
-   ```bash
-   make docker-logs
-   ```
+2.  Verifique os logs:
+    ```bash
+    make docker-logs
+    ```
 
-3. Stop the services:
-   ```bash
-   make docker-stop
-   ```
+3.  Pare os serviços:
+    ```bash
+    make docker-stop
+    ```
 
-### Running Locally
+### Executando Localmente
 
-1. Setup and install dependencies:
-   ```bash
-   make setup-full
-   ```
+1.  Configure e instale as dependências:
+    ```bash
+    make setup-full
+    ```
 
-2. Start PostgreSQL (using Docker):
-   ```bash
-   docker-compose up -d postgres
-   ```
+2.  Inicie o PostgreSQL (usando Docker):
+    ```bash
+    docker-compose up -d postgres
+    ```
 
-3. Run the web application:
-   ```bash
-   make run
-   ```
+3.  Execute a aplicação web:
+    ```bash
+    make run
+    ```
+### �� Ingestão de Dados (Ferramenta CLI)
 
-### Data Ingestion (CLI Tool)
+A ferramenta CLI foi projetada para processar grandes arquivos de negociações da B3 de forma independente da aplicação web.
 
-The CLI tool is designed for processing large B3 trade files independently from the web application.
 
 #### Build the CLI:
 ```bash
@@ -111,31 +118,31 @@ make build-cli
 
 #### Run the CLI:
 ```bash
-# Show help
+# Mostrar ajuda
 make cli-help
 
-# Show version
+# Mostrar a versao
 make cli-version
 
-# Process a file (replace with actual path)
-go run cmd/ingest/main.go -file /path/to/your/29-08-2025_NEGOCIOSAVISTA.txt
+# Processa um arquivo (substitua pelo caminho real)
+go run cmd/ingest/main.go -file /caminho/para/seu/29-08-2025_NEGOCIOSAVISTA.txt
 ```
 
-#### CLI Features:
-- **File Validation**: Checks if the specified file exists
-- **Progress Logging**: Real-time progress updates during processing
-- **Error Handling**: Comprehensive error reporting
-- **Performance Metrics**: Processing time and statistics
-- **Database Connection**: Automatic PostgreSQL connection management
+#### Funcionalidades do CLI::
+- **Validação de Arquivo**: Verifica se o arquivo especificado existe.
+- **Registro de Progresso**: Atualizações de progresso em tempo real durante o processamento
+- **Tratamento de Erros**: Relatório de erros abrangente
+- **Métricas de Performance**: Tempo de processamento e estatísticas.
+- **Conexão com o Banco de Dados**: Gerenciamento automático da conexão com o PostgreSQL.
 
-### API Usage
+### Uso da API
 
-Query aggregated trade data:
+Consulte dados de negociações agregados::
 ```bash
 curl "http://localhost:8080/api/v1/trades/aggregated?ticker=PETR4&data_inicio=2024-01-01"
 ```
 
-Response format:
+Formato da resposta::
 ```json
 {
   "ticker": "PETR4",
@@ -144,88 +151,88 @@ Response format:
 }
 ```
 
-### Testing
+🧪 Testes
 
 Run tests:
 ```bash
 make test
 ```
 
-Run tests with coverage:
+Execute os testes com cobertura:
 ```bash
 make test-coverage
 ```
 
-## Development
+👨‍💻 Desenvolvimento
 
-### Available Make Commands
+### Comandos Make Disponíveis
 
-#### Web Application:
-- `make build` - Build the web application
-- `make run` - Run the web application
-- `make docker-build` - Build Docker image
-- `make docker-run` - Run with Docker Compose
-- `make docker-stop` - Stop Docker Compose
-- `make docker-logs` - View Docker logs
+#### Aplicação Web::
+- `make build` - Compila a aplicação web
+- `make run` -  Executa a aplicação web
+- `make docker-build` - Compila a imagem Docker
+- `make docker-run` - Executa com Docker Compose.
+- `make docker-stop` - Para o Docker Compose
+- `make docker-logs` - VVisualiza os logs do Docker.
 
-#### CLI Tool:
-- `make build-cli` - Build the CLI tool
-- `make run-cli` - Run the CLI tool
-- `make cli-help` - Show CLI help
-- `make cli-version` - Show CLI version
-- `make cli-example` - Example CLI usage
+#### Ferramenta CLI:
+- `make build-cli` - Compila a ferramenta CLI
+- `make run-cli` - Executa a ferramenta CLI.
+- `make cli-help` - Exibe a ajuda do CLI.
+- `make cli-version` -  Exibe a versão do CLI.
+- `make cli-example` - Exemplo de uso do CLI.
 
-#### General:
-- `make test` - Run tests
-- `make test-coverage` - Run tests with coverage
-- `make clean` - Clean build artifacts
-- `make deps` - Install dependencies
-- `make setup` - Create necessary directories
-- `make setup-full` - Full setup (deps + build both tools)
-- `make db-reset` - Reset database
-- `make perf-test` - Performance testing
+#### Geral:
+- `make test` - Executa os testes
+- `make test-coverage` - Executa os testes com cobertura
+- `make clean` - Limpa os artefatos de build.
+- `make deps` -  Instala as dependências.
+- `make setup` - Cria os diretórios necessários
+- `make setup-full` - Configuração completa (deps + compila ambas as ferramentas)
+- `make db-reset` -  Reseta o banco de dados.
+- `make perf-test` - Teste de performance.
 
-### Architecture Benefits
+🏛️ Benefícios da Arquitetura
 
-#### Separated Concerns:
-1. **Web Application**: Optimized for API queries and real-time responses
-2. **CLI Tool**: Dedicated to data ingestion and batch processing
-3. **Shared Services**: Common business logic and database operations
+#### Separação de Responsabilidades:
+1. **Aplicação Web**: Otimizada para queries da API e respostas em tempo real.
+2. **Ferramenta CLI:**: Dedicada à ingestão de dados e processamento em lote.
+3. **Serviços Compartilhados**: Lógica de negócio e operações de banco de dados comuns.
 
-#### Independent Operation:
-- **Web App**: Can run without ingestion overhead
-- **CLI Tool**: Can process files without web server resources
-- **Scalability**: Each component can be scaled independently
+#### Operação Independente:
+- **Aplicação Web**: Pode rodar sem sobrecarga de ingestão.
+- **Ferramenta CLI**: Pode processar arquivos sem depender dos recursos do servidor web.
+- **Escalabilidade**: Cada componente pode ser escalado independentemente
 
-### Data Ingestion Process
+📥 Processo de Ingestão de Dados
 
-The CLI tool processes large B3 trade files (565MB+) efficiently:
+A ferramenta CLI processa grandes arquivos de negociações da B3 (565MB+) de forma eficiente:
 
-1. **Streams** the file line by line without loading it entirely into memory
-2. **Parses** each line into structured trade data
-3. **Batches** trades into configurable batch sizes (default: 1000)
-4. **Uses COPY FROM** for high-performance bulk database inserts
-5. **Handles errors** gracefully with detailed logging
+1. **Streams** do arquivo linha por linha sem carregá-lo inteiramente na memória.
+2. **Parses** cada linha em dados de negociação estruturados.
+3. **Batches** as negociações em lotes de tamanho configurável (padrão: 1000).
+4. **Uses COPY FROM** para inserções de dados em massa de alta performance no banco de dados.
+5. **Handles errors** graciosamente com log detalhado.
 
-### Configuration
+⚙️ Configuração
 
-Environment variables:
-- `DATABASE_URL`: PostgreSQL connection string
-- `API_PORT`: HTTP server port (default: 8080)
+Variáveis de ambiente::
+- `DATABASE_URL`: String de conexão com o PostgreSQL
+- `API_PORT`: Porta do servidor HTTP (padrão: 8080).
 
-Example:
+Exemplo:
 ```bash
 export DATABASE_URL="postgres://user:pass@localhost:5432/b3_trade_aggregator?sslmode=disable"
 export API_PORT="8080"
 ```
 
-## Performance Benchmarks
+⏱️ Benchmarks de Performance
 
-With pgx COPY FROM, the application can process:
-- **~100,000 trades/second** on standard hardware
-- **565MB file** in approximately 2-3 minutes
-- **Memory usage** stays constant regardless of file size
+Com pgx COPY FROM, a aplicação pode processar:
+- **~100,000 negociações/segundo** on em hardware padrão
+- **arquivo de 565MB** em aproximadamente 2-3 minutos
+- **Uso de memória** permanece constante independentemente do tamanho do arquivo
 
-## License
+📄 Licença
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Este projeto está licenciado sob a Licença MIT  -  veja o arquivo [LICENSE](LICENSE) para detalhes.
