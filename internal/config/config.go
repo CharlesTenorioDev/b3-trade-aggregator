@@ -39,11 +39,9 @@ type PGSQLConfig struct {
 	SRV_DB_SSL_MODE           string `json:"srv_db_ssl_mode"`
 }
 
-// LoadConfig carrega as configurações de variáveis de ambiente.
 func LoadConfig() *Config {
 	cfg := NewConfig()
 
-	// Set API port from environment or use default
 	apiPort := os.Getenv("API_PORT")
 	if apiPort == "" {
 		apiPort = "8080"
@@ -51,10 +49,9 @@ func LoadConfig() *Config {
 	}
 	cfg.APIPort = apiPort
 
-	// Set database URL from environment or construct from components
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		// Read individual database components from environment
+
 		dbHost := os.Getenv("SRV_DB_HOST")
 		dbPort := os.Getenv("SRV_DB_PORT")
 		dbUser := os.Getenv("SRV_DB_USER")
@@ -62,7 +59,6 @@ func LoadConfig() *Config {
 		dbName := os.Getenv("SRV_DB_NAME")
 		dbSSLMode := os.Getenv("SRV_DB_SSL_MODE")
 
-		// Update the PGSQLConfig with the values from environment
 		cfg.DB_HOST = dbHost
 		cfg.DB_PORT = dbPort
 		cfg.DB_USER = dbUser
@@ -70,7 +66,6 @@ func LoadConfig() *Config {
 		cfg.DB_NAME = dbName
 		cfg.SRV_DB_SSL_MODE = dbSSLMode
 
-		// Construct the DATABASE_URL
 		dbURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
 			dbUser, dbPass, dbHost, dbPort, dbName, dbSSLMode)
 		logger.Info("DATABASE_URL não definida, usando construída", zap.String("constructed_url", dbURL))
@@ -105,7 +100,6 @@ func defaultConf() *Config {
 	default_conf := Config{
 		Port: "8080",
 		Mode: DEVELOPER,
-		// 7 days for refresh token (7 * 24 * 60 = 10080 minutes)
 
 		PGSQLConfig: &PGSQLConfig{
 			DB_DRIVE: "postgres",

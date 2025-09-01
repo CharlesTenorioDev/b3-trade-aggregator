@@ -16,20 +16,17 @@ type ProgressTracker interface {
 	Increment()
 }
 
-// TradeService define a interface para as operações de negócio de negociações.
 type TradeService interface {
 	ProcessIngestion(ctx context.Context, filePath string) error
 	ProcessIngestionWithProgress(ctx context.Context, filePath string, progressTracker ProgressTracker) error
 	RetrieveAggregatedData(ctx context.Context, instrumentCode string, startDateStr string) (*entity.AggregatedData, error)
 }
 
-// tradeServiceImpl implementa TradeService.
 type tradeServiceImpl struct {
 	tradeReader ingestion.TradeReader
 	tradeRepo   repository.TradeRepository
 }
 
-// NewTradeService cria uma nova instância de TradeService.
 func NewTradeService(reader ingestion.TradeReader, repo repository.TradeRepository) TradeService {
 	return &tradeServiceImpl{
 		tradeReader: reader,
@@ -54,7 +51,7 @@ func (s *tradeServiceImpl) ProcessIngestionWithProgress(ctx context.Context, fil
 		batchSize  = 1000 // Tamanho do lote para inserção no banco de dados
 	)
 
-	tradeCh := s.tradeReader.Read(ctx, filePath) // Inicia a leitura do arquivo
+	tradeCh := s.tradeReader.Read(ctx, filePath)
 
 	var wg sync.WaitGroup
 	errCh := make(chan error, numWorkers) // Canal para coletar erros dos workers

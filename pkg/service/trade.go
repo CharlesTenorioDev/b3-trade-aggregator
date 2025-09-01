@@ -17,13 +17,11 @@ type TradeService interface {
 	RetrieveAggregatedData(ctx context.Context, instrumentCode string, startDateStr string) (*entity.AggregatedData, error)
 }
 
-// tradeServiceImpl implementa TradeService.
 type tradeServiceImpl struct {
 	tradeReader ingestion.TradeReader
 	tradeRepo   repository.TradeRepository
 }
 
-// NewTradeService cria uma nova instância de TradeService.
 func NewTradeService(reader ingestion.TradeReader, repo repository.TradeRepository) TradeService {
 	return &tradeServiceImpl{
 		tradeReader: reader,

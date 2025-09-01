@@ -80,21 +80,21 @@ func New(conf *config.Config) *dabase_pool {
 	if SRV_DB_SET_MAX_OPEN_CONNS != "" {
 		conf.DB_SET_MAX_OPEN_CONNS, _ = strconv.Atoi(SRV_DB_SET_MAX_OPEN_CONNS)
 	} else {
-		conf.DB_SET_MAX_OPEN_CONNS = 10 // Max 10 Open Conns
+		conf.DB_SET_MAX_OPEN_CONNS = 10
 	}
 
 	SRV_DB_SET_MAX_IDLE_CONNS := os.Getenv("SRV_DB_SET_MAX_IDLE_CONNS")
 	if SRV_DB_SET_MAX_IDLE_CONNS != "" {
 		conf.DB_SET_MAX_IDLE_CONNS, _ = strconv.Atoi(SRV_DB_SET_MAX_IDLE_CONNS)
 	} else {
-		conf.DB_SET_MAX_IDLE_CONNS = 10 // Max 10 Idle Conns
+		conf.DB_SET_MAX_IDLE_CONNS = 10
 	}
 
 	SRV_DB_SET_CONN_MAX_LIFE_TIME := os.Getenv("SRV_DB_SET_CONN_MAX_LIFE_TIME")
 	if SRV_DB_SET_CONN_MAX_LIFE_TIME != "" {
 		conf.DB_SET_CONN_MAX_LIFE_TIME, _ = strconv.Atoi(SRV_DB_SET_CONN_MAX_LIFE_TIME)
 	} else {
-		conf.DB_SET_CONN_MAX_LIFE_TIME = 5 // Max Open Conn Interval is 5 minutes
+		conf.DB_SET_CONN_MAX_LIFE_TIME = 5
 	}
 
 	SRV_DB_SSL_MODE := os.Getenv("SRV_DB_SSL_MODE")

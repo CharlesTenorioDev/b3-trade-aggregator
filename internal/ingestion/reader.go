@@ -33,8 +33,7 @@ func (c *TradeStreamReader) Read(ctx context.Context, path string) <-chan entity
 	tradeCh := make(chan entity.Trade)
 
 	go func() {
-		defer close(tradeCh) // Garante que o canal será fechado ao final da goroutine
-
+		defer close(tradeCh)
 		file, err := os.Open(path)
 		if err != nil {
 			logger.Error("erro ao abrir arquivo", err, zap.String("path", path))
@@ -42,7 +41,7 @@ func (c *TradeStreamReader) Read(ctx context.Context, path string) <-chan entity
 		}
 		defer file.Close()
 
-		logFile, err := os.Create("errors.log") // Arquivo para log de erros de parsing
+		logFile, err := os.Create("errors.log")
 		if err != nil {
 			logger.Error("erro ao criar arquivo de log", err)
 			return
@@ -51,12 +50,6 @@ func (c *TradeStreamReader) Read(ctx context.Context, path string) <-chan entity
 
 		scanner := bufio.NewScanner(file)
 
-		// Pula o cabeçalho do arquivo, se houver
-		if scanner.Scan() {
-			// Pode-se logar ou ignorar a linha do cabeçalho
-			// logger.Info("Cabeçalho do arquivo", zap.String("header", scanner.Text()))
-		}
-
 		for scanner.Scan() {
 			select {
 			case <-ctx.Done(): // Verifica se o contexto foi cancelado
@@ -64,7 +57,7 @@ func (c *TradeStreamReader) Read(ctx context.Context, path string) <-chan entity
 				return
 			default:
 				line := scanner.Text()
-				trade, err := parseTrade(line) // Tenta parsear a linha
+				trade, err := parseTrade(line)
 				if err != nil {
 					// Salva a linha com erro no log e continua o processamento
 					logFile.WriteString(fmt.Sprintf("erro: %v | linha: %s\n", err, line))
@@ -85,8 +78,8 @@ func (c *TradeStreamReader) Read(ctx context.Context, path string) <-chan entity
 // parseTrade transforma uma linha do arquivo em uma struct Trade.
 // Ajustado para o formato exato das primeiras linhas do seu exemplo.
 func parseTrade(line string) (entity.Trade, error) {
-	parts := strings.Split(line, ";") // Delimitador é `;`
-	// A linha de exemplo tem 11 colunas. Precisamos de pelo menos a coluna TradeDate (índice 8).
+	parts := strings.Split(line, ";")
+
 	if len(parts) < 9 {
 		return entity.Trade{}, fmt.Errorf("linha inválida, esperado pelo menos 9 colunas, encontrada %d", len(parts))
 	}
@@ -116,19 +109,17 @@ func parseTrade(line string) (entity.Trade, error) {
 
 	return entity.Trade{
 		TradeDate:          tradeDate,
-		InstrumentCode:     parts[1], // CodigoInstrumento está na posição 1
+		InstrumentCode:     parts[1],
 		NegotiatedPrice:    negotiatedPrice,
 		NegotiatedQuantity: negotiatedQuantity,
 		ClosingTime:        closingTime,
 	}, nil
 }
 
-// parseFloat converte uma string para float64.
 func parseFloat(s string) (float64, error) {
 	return strconv.ParseFloat(strings.TrimSpace(s), 64)
 }
 
-// parseInt converte uma string para int.
 func parseInt(s string) (int, error) {
 	return strconv.Atoi(strings.TrimSpace(s))
 }

@@ -2,20 +2,20 @@ package main
 
 import (
 	"context"
-	"flag" // Para parsing de argumentos de linha de comando
+	"flag"
 	"fmt"
-	"os"          // Para operações de sistema de arquivos e variáveis de ambiente
-	"runtime"     // Para controle do uso de CPU
-	"sync/atomic" // Para operações atômicas seguras em concorrência
-	"time"        // Para manipulação de tempo
+	"os"
+	"runtime"
+	"sync/atomic"
+	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool" // Driver de pool de conexões para PostgreSQL (pgx)
+	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config"        // Configurações da aplicação
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config/logger" // Logger customizado
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/ingestion"     // Lógica de ingestão de dados
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/repository"    // Camada de acesso a dados
-	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/service"       // Camada de lógica de negócio
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config"
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/config/logger"
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/ingestion"
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/repository"
+	"github.com/CharlesTenorioDev/b3-trade-aggregator/internal/service"
 	"go.uber.org/zap"
 )
 
@@ -136,7 +136,6 @@ func main() {
 
 	// Inicializa a conexão com o banco de dados PostgreSQL usando pgxpool.
 	logger.Info("Conectando ao PostgreSQL...")
-	// context.Background() é usado para o contexto inicial da criação do pool.
 	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
 		logger.Error("Falha ao criar o pool de conexões", err, zap.String("database_url", cfg.DatabaseURL))

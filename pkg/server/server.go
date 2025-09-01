@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// Server define a interface para o servidor HTTP
 type Server interface {
 	Listen(ctx context.Context, wg *sync.WaitGroup)
 }

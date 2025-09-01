@@ -6,12 +6,12 @@ import (
 )
 
 func RegisterTradeAPIHandlers(r *chi.Mux, tradeService service.TradeService) {
-	// API v1 routes
+
 	r.Route("/api/v1", func(r chi.Router) {
-		// Trade routes
+
 		r.Route("/trades", func(r chi.Router) {
 			r.Get("/aggregated", GetAggregatedTradesHandler(tradeService))
-			
+
 		})
 	})
 }

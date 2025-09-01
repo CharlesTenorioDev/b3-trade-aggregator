@@ -50,9 +50,8 @@ func main() {
 
 	// Configurar dependências para consultas (sem ingestão)
 	tradeRepo := repository.NewPostgresTradeRepository(pool)
-	tradeService := service.NewTradeService(nil, tradeRepo) // No reader needed for queries only
+	tradeService := service.NewTradeService(nil, tradeRepo)
 
-	// Criação do router com Chi
 	r := chi.NewRouter()
 
 	// Middleware básico
@@ -68,7 +67,7 @@ func main() {
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: false,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
+		MaxAge:           300,
 	})
 	r.Use(corsMiddleware)
 
@@ -79,13 +78,11 @@ func main() {
 		fmt.Fprintf(w, `{"MSG":"Server Ok","codigo":200}`)
 	})
 
-	// Registra handlers do módulo trade
 	handler.RegisterTradeAPIHandlers(r, tradeService)
 
-	// Create an HTTP server
 	srv := server.NewHTTPServer(r, cfg)
 
-	// Start the server in goroutine
+	// Inicia o servidor usando goroutine
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("Server failed to start", err)
