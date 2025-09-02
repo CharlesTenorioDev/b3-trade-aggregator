@@ -1,259 +1,155 @@
 # 🚀 Agregador de Negociações B3
 
-Uma aplicação Go de alta performance para agregação e processamento de dados de negociações da B3 com 🐘 PostgreSQL 17, otimizada para ingestão de dados em larga escala usando pgx COPY FROM.
+Uma aplicação Go de alta performance para agregação e processamento de dados de negociações da B3 com 🐘 PostgreSQL.
 
-## ✒️ Autor
+## ✨ Visão Geral
 
--   **Charles Tenorio da Silva**
--   **Email**: charles.tenorio.dev@gmail.com
+Este projeto é super prático e oferece duas formas de interagir com os dados da B3:
 
-## ✨ Funcionalidades
+1.  **Aplicação Web**: Uma API para consultar dados já processados.
+2.  **Ferramenta CLI**: Uma ferramenta para importar arquivos de negociações para o banco de dados.
 
--   **⚡ Ingestão de Dados de Alta Performance**: Utiliza `pgx COPY FROM` para uma performance ótima em inserções em massa.
--   **�� PostgreSQL 17**: A versão mais recente do PostgreSQL com funcionalidades avançadas.
--   **🧹 Arquitetura Limpa**: Projeto Go bem estruturado seguindo as melhores práticas.
--   **🐳 Suporte a Docker**: Containerização completa com Docker Compose para fácil implantação.
--   **🌐 API RESTful**: API HTTP para consultar dados de negociações agregados.
--   **🌊 Processamento por Streaming**: Processamento eficiente de arquivos por streaming para grandes conjuntos de dados.
--   **✂️ Separação de Responsabilidades**: Ferramenta CLI independente para ingestão de dados e API web para consultas.
+Ambas funcionam a partir do mesmo código e são fáceis de rodar, seja com Docker ou diretamente na sua máquina.
 
-## 📁 Estrutura do Projeto
+---
 
+## ⚠️ **Primeiro Passo Crucial para AMBOS os Métodos!** ⚠️
 
-```
-├── cmd/
-│   ├── app/
-│   │   └── main.go                 # Ponto de entrada da aplicação web
-│   └── ingest/
-│       └── main.go                 # Ponto de entrada da ferramenta CLI de ingestão 
-├── internal/
-│   ├── api/
-│   │   └── handler/
-│   │       ├── handler.go          #  Lógica de tratamento de requisições HTTP
-│   │       └── router.go           # API route registration
-│   ├── config/
-│   │   └── config.go               # Carregamento e estrutura das configurações
-│   ├── entity/
-│   │   └── trade.go                # Modelos de dados
-│   ├── ingestion/
-│   │   ├── reader.go               # Leitura por streaming
+Antes de qualquer coisa, você precisa do arquivo de dados da B3:
 
-│   ├── repository/
-│   │   └── trade.go                # Interações com o banco de dados (pgx COPY FROM)
-│   ├── service/
-│   │   └── trade.go                #  Lógica de negócio e orquestração
-│   └── util/
-│       └── errors.go               # Tipos de erro customizados e utilitários
-├── pkg/                            # Pacotes reutilizáveis
-│   └── server/
-│       └── server.go               # Implementação do servidor HTTP
-├── migrations/                     #  Scripts de migração do banco de dados
-├── tests/                          # Testes de integração/ponta a ponta
-├── data/                           # Diretório para arquivos de dados
-├── docker-compose.yml              # Orquestração de serviços Docker
-├── Dockerfile                      # Containerização da aplicação
-├── Makefile                        # Automação de tarefas
-└── go.mod                          # Módulos Go
-```
+*   **Baixe o arquivo**: Acesse [https://arquivos.b3.com.br/rapinegocios/tickercsv/2025-08-29](https://arquivos.b3.com.br/rapinegocios/tickercsv/2025-08-29).
+*   **Salve na pasta `data/`**: Renomeie o arquivo baixado para `29-08-2025_NEGOCIOSAVISTA.txt` e coloque-o dentro da pasta `data/` do projeto.
+    *   **Caminho final**: `data/29-08-2025_NEGOCIOSAVISTA.txt`
 
-## 📈 Otimizações de Performance
+---
 
-**pgx COPY FROM**: Utiliza o protocolo `COPY` do PostgreSQL para inserções em massa (10x mais rápido que `INSERT`s individuais).
--   **Pool de Conexões**: Gerenciamento eficiente de conexões com `pgxpool`.
--   **Processamento em Lotes**: Tamanhos de lote configuráveis para uso ótimo de memória.
--   **Streaming**: Processamento de arquivos sem carregar o arquivo inteiro na memória.
--   **Queries Indexadas**: Índices de banco de dados otimizados para agregações rápidas.
+## �� **Como Rodar a Aplicação (Escolha seu Método!)**
 
-## �� Primeiros Passos
+### Opção 1: Com Docker (Recomendado! É o mais fácil!) ��
 
-### Pré-requisitos
+Use esta opção se você quer tudo funcionando rapidinho, sem instalar Go ou PostgreSQL na sua máquina.
 
--   Go 1.24+ 🐹
--   PostgreSQL 17 ��
--   Docker e Docker Compose 🐳
--   **Arquivo de Dados da B3**: É imprescindível baixar o arquivo de dados da B3 do link [https://arquivos.b3.com.br/rapinegocios/tickercsv/2025-08-29](https://arquivos.b3.com.br/rapinegocios/tickercsv/2025-08-29) e salvá-lo na pasta `data/` com o nome `29-08-2025_NEGOCIOSAVISTA.txt`. O caminho final do arquivo deve ser `data/29-08-2025_NEGOCIOSAVISTA.txt`.
-
-### Executando com Docker (Recomendado)
-
-1.  Inicie os serviços:
+1.  **Pré-requisitos**:
+    *   Instale **Docker** e **Docker Compose** (se ainda não tiver).
+2.  **Inicie tudo**: Na pasta principal do projeto, digite:
     ```bash
     make docker-run
     ```
-
-2.  Verifique os logs:
+    *   **O que acontece?** Isso vai:
+        *   Construir as aplicações.
+        *   **Iniciar o PostgreSQL**.
+        *   Ligar a Aplicação Web.
+        *   **Importar os dados da B3 automaticamente** usando a ferramenta CLI. Ela faz a ingestão e depois se desliga sozinha!
+3.  **Verifique (opcional)**: Para ver o que está acontecendo:
     ```bash
     make docker-logs
     ```
-
-3.  Pare os serviços:
+4.  **Para parar**: Quando quiser desligar tudo:
     ```bash
     make docker-stop
     ```
 
-### Executando Localmente
+### Opção 2: Localmente (Com o Script Interativo!) ��
 
-#### Opção 1: Script Manual (Recomendado)
-O script `run_manual.sh` oferece uma experiência interativa para executar as aplicações sem Docker:
+Ideal se você prefere rodar o código diretamente na sua máquina. O script `run_manual.sh` cuida de quase tudo!
 
-```bash
-# Executar via Makefile
-make run-manual
+1.  **Pré-requisitos**:
+    *   Instale **Go 1.24+** 🐹.
+    *   Instale **Docker** e **Docker Compose** (o script usa o Docker Compose para iniciar o PostgreSQL, se precisar).
+2.  **Execute o script**: Na pasta principal do projeto, digite:
+    ```bash
+    make run-manual
+    ```
+    *   **O que acontece?** O script vai:
+        *   Verificar e configurar seu ambiente (incluindo o arquivo `.env`).
+        *   **Iniciar o PostgreSQL** (se necessário).
+        *   Construir as aplicações Go.
+        *   Apresentar um **menu** para você escolher o que quer rodar (Aplicação Web, Ferramenta CLI ou Ambas!).
 
-# Ou executar diretamente
-./run_manual.sh
-```
+---
 
-**Funcionalidades do Script:**
-- ✅ Verifica pré-requisitos (Go, arquivos de configuração)
-- ✅ Cria automaticamente `.env` a partir de `local-env.txt` se necessário
-- ✅ Constrói ambas as aplicações automaticamente
-- ✅ Menu interativo para escolher qual aplicação executar
-- ✅ Verifica conectividade com PostgreSQL
-- ✅ Limpeza automática ao encerrar
+## 🚀 **Usando a Aplicação**
 
-#### Opção 2: Comandos Individuais
-1. Configure e instale as dependências:
-   ```bash
-   make setup-full
-   ```
+Depois de iniciar a aplicação com um dos métodos acima:
 
-2. Inicie o PostgreSQL (usando Docker):
-   ```bash
-   docker compose up -d postgres
-   ```
+### 1. **Importação dos Dados da B3 (Ingestão)**
 
-3. Execute a aplicação web:
-   ```bash
-   make run
-   ```
-### �� Ingestão de Dados (Ferramenta CLI)
+É fundamental que os dados da B3 estejam no banco para a API funcionar!
 
-A ferramenta CLI foi projetada para processar grandes arquivos de negociações da B3 de forma independente da aplicação web.
+*   **Se você usou `make docker-run`**:
+    *   **A importação já foi feita automaticamente!** Não precisa fazer mais nada.
 
+*   **Se você usou o script (`make run-manual`)**:
+    *   No **menu** do script, escolha a opção para rodar a **"CLI Application (Data Ingestion)"** ou a opção **"Both (CLI first, then Web)"**. O script fará a importação para você.
 
-#### Build the CLI:
-```bash
-make build-cli
-```
+*   **Se quiser rodar a CLI manualmente (após `make build-cli`)**:
+    ```bash
+    # Para importar o arquivo que você baixou
+    make cli-example
 
-#### Run the CLI:
-```bash
-# Mostrar ajuda
-make cli-help
+    # Ou, para um arquivo diferente
+    ./bin/ingest -file /caminho/para/seu/outro_arquivo.txt
+    ```
 
-# Mostrar a versao
-make cli-version
+### 2. **Consultando Dados via API (Web)**
 
-# Processa um arquivo (substitua pelo caminho real)
-go run cmd/ingest/main.go -file /caminho/para/seu/29-08-2025_NEGOCIOSAVISTA.txt
-```
+Com os dados importados, a Aplicação Web já está funcionando em `http://localhost:8080`.
 
-#### Funcionalidades do CLI::
-- **Validação de Arquivo**: Verifica se o arquivo especificado existe.
-- **Registro de Progresso**: Atualizações de progresso em tempo real durante o processamento
-- **Tratamento de Erros**: Relatório de erros abrangente
-- **Métricas de Performance**: Tempo de processamento e estatísticas.
-- **Conexão com o Banco de Dados**: Gerenciamento automático da conexão com o PostgreSQL.
+**Exemplo de Consulta**:
+Use o `curl` (ou seu navegador) para testar:
 
-### Uso da API
-
-Consulte dados de negociações agregados::
 ```bash
 curl "http://localhost:8080/api/v1/trades/aggregated?ticker=PETR4&data_inicio=2024-01-01"
-```
 
-Formato da resposta::
-```json
+Formato da Resposta (Exemplo):
 {
   "ticker": "PETR4",
   "max_range_value": 45.67,
   "max_daily_volume": 1500000
 }
-```
 
-🧪 Testes
+## ⚙️ Configuração Extra (Para Curiosos!)
 
-Run tests:
-```bash
-make test
-```
+A aplicação usa variáveis de ambiente que podem ser configuradas no arquivo `.env` na raiz do projeto (o script `run_manual.sh` já cuida disso, copiando do `local-env.txt` se o `.env` não existir).
 
-Execute os testes com cobertura:
-```bash
-make test-coverage
-```
+Aqui está um exemplo completo do que você pode ter no seu arquivo `.env`:
 
-👨‍💻 Desenvolvimento
+```dotenv
+APP_NAME=BACKEND-APLICATION
+SRV_PORT=8080
+SRV_MODE=DEVELOPER
 
-### Comandos Make Disponíveis
+# Configurações do Banco de Dados PostgreSQL
+SRV_DB_HOST=localhost
+SRV_DB_NAME=b3_trade_aggregator
+SRV_DB_USER=postgres
+SRV_DB_PASS=postgres
+SRV_DB_PORT=5432
+SRV_DB_SSL_MODE=require # Ou 'disable' para desenvolvimento local mais fácil
 
-#### Aplicação Web::
-- `make build` - Compila a aplicação web
-- `make run` -  Executa a aplicação web
-- `make docker-build` - Compila a imagem Docker
-- `make docker-run` - Executa com Docker Compose.
-- `make docker-stop` - Para o Docker Compose
-- `make docker-logs` - VVisualiza os logs do Docker.
+# Alternativa: Use DATABASE_URL ao invés das variáveis individuais acima
+# DATABASE_URL=postgres://postgres:postgres@localhost:5432/b3_trade_aggregator?sslmode=disable
 
-#### Ferramenta CLI:
-- `make build-cli` - Compila a ferramenta CLI
-- `make run-cli` - Executa a ferramenta CLI.
-- `make cli-help` - Exibe a ajuda do CLI.
-- `make cli-version` -  Exibe a versão do CLI.
-- `make cli-example` - Exemplo de uso do CLI.
+# Configuração da API Web
+API_PORT=8080
 
-#### Geral:
-- `make test` - Executa os testes
-- `make test-coverage` - Executa os testes com cobertura
-- `make clean` - Limpa os artefatos de build.
-- `make deps` -  Instala as dependências.
-- `make setup` - Cria os diretórios necessários
-- `make setup-full` - Configuração completa (deps + compila ambas as ferramentas)
-- `make db-reset` -  Reseta o banco de dados.
-- `make perf-test` - Teste de performance.
-- `make run-manual` - Executa script manual para rodar aplicações sem Docker
+# Caminho padrão para o arquivo de dados da B3 para a ferramenta CLI
+FILE_PATH=data/29-08-2025_NEGOCIOSAVISTA.txt
 
-🏛️ Benefícios da Arquitetura
+# Configurações de Log
+LOG_LEVEL=info
+LOG_OUTPUT=stdout
 
-#### Separação de Responsabilidades:
-1. **Aplicação Web**: Otimizada para queries da API e respostas em tempo real.
-2. **Ferramenta CLI:**: Dedicada à ingestão de dados e processamento em lote.
-3. **Serviços Compartilhados**: Lógica de negócio e operações de banco de dados comuns.
+## 👨‍💻 Para Desenvolvedores (Se Quiser se Aprofundar)
 
-#### Operação Independente:
-- **Aplicação Web**: Pode rodar sem sobrecarga de ingestão.
-- **Ferramenta CLI**: Pode processar arquivos sem depender dos recursos do servidor web.
-- **Escalabilidade**: Cada componente pode ser escalado independentemente
+Aqui estão alguns comandos `make` úteis se você for explorar o código:
 
-📥 Processo de Ingestão de Dados
+*   `make build` e `make build-cli`: Compilam as aplicações individualmente.
+*   `make test` e `make test-coverage`: Para rodar os testes.
+*   `make dev`: Inicia a aplicação web com recarregamento automático (requer `air`).
+*   `make db-reset`: **CUIDADO!** Reseta o banco de dados e apaga TUDO. Use só em desenvolvimento.
 
-A ferramenta CLI processa grandes arquivos de negociações da B3 (565MB+) de forma eficiente:
+## ✒️ Autor e Licença
 
-1. **Streams** do arquivo linha por linha sem carregá-lo inteiramente na memória.
-2. **Parses** cada linha em dados de negociação estruturados.
-3. **Batches** as negociações em lotes de tamanho configurável (padrão: 1000).
-4. **Uses COPY FROM** para inserções de dados em massa de alta performance no banco de dados.
-5. **Handles errors** graciosamente com log detalhado.
-
-⚙️ Configuração
-
-Variáveis de ambiente::
-- `DATABASE_URL`: String de conexão com o PostgreSQL
-- `API_PORT`: Porta do servidor HTTP (padrão: 8080).
-
-Exemplo:
-```bash
-export DATABASE_URL="postgres://user:pass@localhost:5432/b3_trade_aggregator?sslmode=disable"
-export API_PORT="8080"
-```
-
-⏱️ Benchmarks de Performance
-
-Com pgx COPY FROM, a aplicação pode processar:
-- **~100,000 negociações/segundo** on em hardware padrão
-- **arquivo de 565MB** em aproximadamente 2-3 minutos
-- **Uso de memória** permanece constante independentemente do tamanho do arquivo
-
-📄 Licença
-
-Este projeto está licenciado sob a Licença MIT  -  veja o arquivo [LICENSE](LICENSE) para detalhes.
+*   **Autor**: Charles Tenorio da Silva (<charles.tenorio.dev@gmail.com>)
+*   **Licença**: Este projeto está licenciado sob a Licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
