@@ -34,14 +34,12 @@ func (r *postgresTradeRepository) SaveTrades(ctx context.Context, trades []entit
 		return nil
 	}
 
-	// Inicia uma transação
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("repository: falha ao iniciar transação: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	// Prepara o COPY FROM
 	copyCount, err := tx.CopyFrom(
 		ctx,
 		pgx.Identifier{"trades"},
@@ -80,7 +78,6 @@ func (r *postgresTradeRepository) tradesToRows(trades []entity.Trade) [][]interf
 	return rows
 }
 
-// GetAggregatedData busca dados agregados para um ticker e período.
 func (r *postgresTradeRepository) GetAggregatedData(ctx context.Context, instrumentCode string, startDate time.Time) (*entity.AggregatedData, error) {
 	query := `
         SELECT

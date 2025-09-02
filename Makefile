@@ -12,7 +12,8 @@ _LOAD_ENV := set -a && . ./.env && set +a || true
 # Isso garante que o make sempre execute a receita, mesmo que exista um arquivo com o mesmo nome.
 .PHONY: build run test clean docker-build docker-run deps migrate build-cli run-cli run-cli-env \
 	test-coverage docker-stop docker-logs setup setup-full dev db-reset perf-test \
-	cli-help cli-version cli-example cli-example-env
+	cli-help cli-version cli-example cli-example-env docker-build-web docker-build-cli \
+	docker-run-web docker-run-cli run-manual
 
 # Build da aplicação principal (servidor API).
 # Compila o executável principal da API e o coloca em 'bin/app'.
@@ -62,22 +63,37 @@ clean:
 	rm -rf bin/
 	rm -f coverage.out
 
-# Constrói a imagem Docker da aplicação com a tag 'b3-trade-aggregator'.
-docker-build:
-	docker build -t b3-trade-aggregator .
+# Constrói a imagem Docker da aplicação web com a tag 'b3-trade-aggregator:web-app'.
+docker-build-web:
+	docker build -t b3-trade-aggregator:web-app -f Dockerfile .
+
+# Constrói a imagem Docker da aplicação CLI com a tag 'b3-trade-aggregator:cli-app'.
+docker-build-cli:
+	docker build -t b3-trade-aggregator:cli-app -f DockerfileCli .
+
+# Constrói ambas as imagens Docker (web-app e cli-app).
+docker-build: docker-build-web docker-build-cli
 
 # Inicia os serviços definidos no docker-compose.yml em modo detached (-d).
-# O docker-compose por padrão já procura e carrega o arquivo .env na mesma pasta do compose.
+# O docker compose por padrão já procura e carrega o arquivo .env na mesma pasta do compose.
 docker-run:
-	docker-compose up -d
+	docker compose up -d
+
+# Inicia apenas o serviço web-app.
+docker-run-web:
+	docker compose up -d web-app
+
+# Inicia apenas o serviço cli-app.
+docker-run-cli:
+	docker compose up cli-app
 
 # Para e remove os containers e redes criados pelo docker-compose.
 docker-stop:
-	docker-compose down
+	docker compose down
 
 # Exibe os logs dos serviços do Docker Compose em tempo real.
 docker-logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 # Executa as migrações do banco de dados.
 # ATENÇÃO: É um placeholder. Você precisa instalar uma ferramenta de migração (ex: 'migrate' ou 'goose')
@@ -122,7 +138,7 @@ db-reset:
 	$(info ATENÇÃO: Resetando banco de dados...)
 	$(info Todos os dados serão perdidos!)
 	@read -p "Tem certeza? Digite 'yes' para confirmar: " confirm && [ "$$confirm" = "yes" ] || exit 1
-	$(_LOAD_ENV) && docker-compose down -v && docker-compose up -d postgres
+	$(_LOAD_ENV) && docker compose down -v && docker compose up -d postgres
 	$(info Aguardando PostgreSQL inicializar...)
 	sleep 10
 	$(_LOAD_ENV) && make migrate
@@ -141,6 +157,7 @@ cli-help: build-cli
 
 # Exibe a versão do CLI
 cli-version: build-cli
+	$(info Exibindo versão do CLI...)
 	$(_LOAD_ENV) && ./bin/ingest -version
 
 # Exemplo de uso do CLI com arquivo específico
@@ -152,3 +169,10 @@ cli-example: build-cli
 cli-example-env: build-cli
 	$(info Exemplo de uso do CLI com variável de ambiente...)
 	$(_LOAD_ENV) && ./bin/ingest
+
+# Executa o script manual para rodar aplicações sem Docker
+# Permite escolher entre web, CLI ou ambos
+run-manual:
+	$(info Executando script manual para rodar aplicações sem Docker...)
+	$(info O script irá verificar pré-requisitos, construir aplicações e permitir escolha.)
+	./run_manual.sh

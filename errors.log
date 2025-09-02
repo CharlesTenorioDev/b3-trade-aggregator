@@ -1,0 +1,1 @@
+erro: erro ao parsear TradeDate 'DataNegocio': parsing time "DataNegocio" as "2006-01-02": cannot parse "DataNegocio" as "2006" | linha: DataReferencia;CodigoInstrumento;AcaoAtualizacao;PrecoNegocio;QuantidadeNegociada;HoraFechamento;CodigoIdentificadorNegocio;TipoSessaoPregao;DataNegocio;CodigoParticipanteComprador;CodigoParticipanteVendedor

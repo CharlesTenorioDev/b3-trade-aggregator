@@ -16,8 +16,8 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/app
+# Build the web application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o web-app ./cmd/app
 
 # Final stage
 FROM alpine:latest
@@ -26,10 +26,10 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 
 # Create app directory
-WORKDIR /root/
+WORKDIR /app
 
 # Copy the binary from builder stage
-COPY --from=builder /app/main .
+COPY --from=builder /app/web-app .
 
 # Create data directory
 RUN mkdir -p /app/data
@@ -37,5 +37,9 @@ RUN mkdir -p /app/data
 # Expose port
 EXPOSE 8080
 
-# Run the application
-CMD ["./main"]
+# Set environment variables with defaults
+ENV API_PORT=8080
+ENV SRV_MODE=production
+
+# Run the web application
+CMD ["./web-app"]

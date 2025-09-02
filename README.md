@@ -92,20 +92,40 @@ Uma aplicação Go de alta performance para agregação e processamento de dados
 
 ### Executando Localmente
 
-1.  Configure e instale as dependências:
-    ```bash
-    make setup-full
-    ```
+#### Opção 1: Script Manual (Recomendado)
+O script `run_manual.sh` oferece uma experiência interativa para executar as aplicações sem Docker:
 
-2.  Inicie o PostgreSQL (usando Docker):
-    ```bash
-    docker-compose up -d postgres
-    ```
+```bash
+# Executar via Makefile
+make run-manual
 
-3.  Execute a aplicação web:
-    ```bash
-    make run
-    ```
+# Ou executar diretamente
+./run_manual.sh
+```
+
+**Funcionalidades do Script:**
+- ✅ Verifica pré-requisitos (Go, arquivos de configuração)
+- ✅ Cria automaticamente `.env` a partir de `local-env.txt` se necessário
+- ✅ Constrói ambas as aplicações automaticamente
+- ✅ Menu interativo para escolher qual aplicação executar
+- ✅ Verifica conectividade com PostgreSQL
+- ✅ Limpeza automática ao encerrar
+
+#### Opção 2: Comandos Individuais
+1. Configure e instale as dependências:
+   ```bash
+   make setup-full
+   ```
+
+2. Inicie o PostgreSQL (usando Docker):
+   ```bash
+   docker compose up -d postgres
+   ```
+
+3. Execute a aplicação web:
+   ```bash
+   make run
+   ```
 ### �� Ingestão de Dados (Ferramenta CLI)
 
 A ferramenta CLI foi projetada para processar grandes arquivos de negociações da B3 de forma independente da aplicação web.
@@ -191,6 +211,7 @@ make test-coverage
 - `make setup-full` - Configuração completa (deps + compila ambas as ferramentas)
 - `make db-reset` -  Reseta o banco de dados.
 - `make perf-test` - Teste de performance.
+- `make run-manual` - Executa script manual para rodar aplicações sem Docker
 
 🏛️ Benefícios da Arquitetura
 

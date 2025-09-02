@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   # PostgreSQL 17 service
@@ -19,9 +19,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # Application service
-  app:
-    build: .
+  # Web Application service
+  web-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: b3-trade-aggregator:web-app
     ports:
       - "8080:8080"
     depends_on:
@@ -30,9 +33,27 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/b3_trade_aggregator?sslmode=disable
       API_PORT: 8080
+      SRV_MODE: production
     volumes:
       - ./data:/app/data  # Mount para arquivos de dados
     restart: unless-stopped
+
+  # CLI Application service (for data ingestion)
+  cli-app:
+    build:
+      context: .
+      dockerfile: DockerfileCli
+    image: b3-trade-aggregator:cli-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/b3_trade_aggregator?sslmode=disable
+      SRV_DB_SSL_MODE: disable
+      FILE_PATH: /app/data/29-08-2025_NEGOCIOSAVISTA.txt
+    volumes:
+      - ./data:/app/data  # Mount para arquivos de dados
+    restart: "no"  # CLI runs once and exits
 
 volumes:
   postgres_data:
